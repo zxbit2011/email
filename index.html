@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="http://ueditor.baidu.com/umeditor/themes/default/css/umeditor.min.css" type="text/css" rel="stylesheet">
+
+    <script src="http://ueditor.baidu.com/umeditor/third-party/jquery.min.js"></script>
+    <script src="http://ueditor.baidu.com/umeditor/third-party/template.min.js"></script>
+    <script type="text/javascript" charset="utf-8" src="http://ueditor.baidu.com/umeditor/umeditor.config.js"></script>
+    <script type="text/javascript" charset="utf-8" src="http://ueditor.baidu.com/umeditor/umeditor.min.js"></script>
+    <script type="text/javascript" src="http://ueditor.baidu.com/umeditor/lang/zh-cn/zh-cn.js"></script>
+    <style>
+        body {
+            margin: 50px;
+        }
+
+        input {
+            display: block;
+            height: 30px;
+            width: 80%;
+            margin: 10px auto;
+            padding-left: 20px;
+
+        }
+
+        textarea {
+            padding: 10px;
+            width: 80%;
+            height: 50px;
+        }
+
+        .center {
+            text-align: center
+        }
+
+        .email-tip {
+            display: block;
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<form id="emailForm">
+    <div class="center">
+        <h1>邮件批量发送</h1>
+        <input type="text" placeholder="请输入你的邮箱帐号" id="account" name='account'/>
+        <input type="text" placeholder="请输入你的邮箱密码" id="pwd" name='pwd'/>
+        <input type="text" placeholder="主题" id="title" name='title'/>
+        <div style="width:80%;margin:10px auto;"><span style="float:left">上传附件：</span><input type="file" placeholder="附件" id="file" name='file' style='width: 50%;
+    margin: 0;
+    float: right;'/></div>
+        <textarea placeholder="发送方邮箱地地址" id="email" name='email'></textarea>
+        <textarea name="content" id="content" style="display:none"></textarea>
+        <small class='email-tip'></small>
+        <div><h2>内容</h2></div>
+    </div>
+    <div style="width:80%;margin:20px auto 40px;">
+        <script type="text/plain" id="editor" style="width:100%;height:360px;"></script>
+    </div>
+    <div style="text-align: center;">
+        <input type="button" value="发送邮件" style="margin:20px auto;" id="send"/>
+    </div>
+</form>
+<script src="http://www.cyb1818.com/static/plugin/layer/layer.js"></script>
+<script type="text/javascript">
+    var serverPath = '/server/umeditor/',
+        um = UM.getEditor('editor', {
+            imageUrl: serverPath + "imageUp.php",
+            imagePath: serverPath,
+            lang: /^zh/.test(navigator.language || navigator.browserLanguage || navigator.userLanguage) ? 'zh-cn' : 'en',
+            langPath: UMEDITOR_CONFIG.UMEDITOR_HOME_URL + "lang/",
+            focus: true
+        });
+
+    $(function () {
+        $("#send").click(function () {
+            var account = $("#account").val();
+            var pwd = $("#pwd").val();
+            var title = $("#title").val();
+            var email = $("#email").val();
+            var files = $("#file")[0].files.length <= 0 ? null : $("#file")[0].files[0];
+            var content = UM.getEditor('editor').getContent();
+            if (account == '' || pwd == '' || title == '' || email == '' || content == '') {
+                alert('请填写完整信息');
+                return;
+            }
+            $("#content").val(content);
+            layer.msg('正在发送中..', {icon: 6, time: -1});
+            var formData = new FormData($("#emailForm")[0]);
+            $.ajax({
+                url: "send",
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (e) {
+                    if (e.indexOf("success") > -1) {
+                        layer.msg('发送成功', {icon: 1});
+                    } else {
+                        layer.msg('发送失败，错误：'+e, {icon: 0});
+                    }
+                },
+                error: function (e) {
+                    layer.msg("请启动邮件服务Send文件", {icon: 2});
+                }
+            });
+        })
+        $("#email").keyup(function () {
+            getEmail()
+        });
+    });
+
+    function getEmail() {
+        var email = $("#email").val();
+        var pattern = /\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/gi;
+        var result = email.match(pattern);
+        if (null == result || 0 == result.length) {
+            $(".email-tip").html("（没有匹配）");
+            return false;
+        }
+        var strResult = "共找到 " + result.length + " 处匹配：\r\n";
+        var newEmails = new Array();
+        for (var i = 0; i < result.length; ++i) {
+            strResult = strResult + result[i] + "\r\n";
+            newEmails.push(result[i]);
+        }
+        $(".email-tip").html(strResult);
+        $("#email").val(newEmails.join(';'))
+    }
+</script>
+</body>
+</html>
